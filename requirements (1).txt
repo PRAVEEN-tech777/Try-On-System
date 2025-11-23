@@ -1,0 +1,27 @@
+## Core Framework
+streamlit==1.39.0
+Pillow==10.1.0
+
+## Computer Vision
+opencv-python==4.8.1.78
+numpy==1.24.3
+mediapipe==0.10.9
+
+## Deep Learning Models
+torch==2.0.1
+torchvision==0.15.2
+transformers==4.35.2
+timm==0.9.12
+
+## Background Removal
+rembg==0.0.55
+
+## Utilities
+dataclasses-json==0.6.1
+python-dotenv==1.0.0
+
+## Optional: GPU Acceleration
+# Uncomment one based on your GPU:
+# torch-cuda (CUDA 11.8)
+# torch-cuda (CUDA 12.1)
+# For CPU-only, torch includes CPU support by default

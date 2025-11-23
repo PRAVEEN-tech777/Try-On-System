@@ -1,0 +1,125 @@
+# Streamlit Configuration for Enhanced Jewelry Try-On
+# Place this file at .streamlit/config.toml in your project directory
+
+[theme]
+# Color theme
+primaryColor = "#9370DB"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "sans serif"
+
+[server]
+# Port configuration
+port = 8501
+headless = false
+
+# Performance settings
+maxUploadSize = 500  # MB
+enableXsrfProtection = true
+
+# Run behavior
+runOnSave = false
+# Set to true to auto-run when code changes during development
+
+[logger]
+# Logging level: debug, info, warning, error, critical
+level = "info"
+
+[client]
+# UI customization
+toolbarMode = "minimal"
+# Options: "auto", "minimal", "viewer", "developer", "hidden"
+
+showErrorDetails = true
+showSidebarNavigation = true
+
+[browser]
+# Browser settings
+# gatherUsageStats = false  # Disable analytics
+
+[runner]
+# Runner settings
+magicEnabled = true
+fastReruns = true
+
+# Max reruns before killing the script
+reruns_before_halt = 100
+
+[deprecation]
+# Suppress deprecation warnings
+showPyplotGlobalUse = false
+
+# ============================================
+# OPTIONAL: GPU/Memory Settings
+# ============================================
+# Uncomment to enable these settings
+
+# [logger]
+# level = "debug"  # For debugging GPU issues
+
+# [runner]
+# # For low-memory systems:
+# # fastReruns = false
+
+# [ui]
+# # Reduce animation complexity
+# animateAutoplay = false
+
+# ============================================
+# OPTIONAL: Security Settings
+# ============================================
+
+# [server]
+# # Enable authentication
+# # baseUrlPath = "/app"
+# # baseUrl = "https://yourdomain.com"
+
+# # SSL Configuration
+# # sslCertfile = "/path/to/cert.pem"
+# # sslKeyfile = "/path/to/key.pem"
+
+# # CORS Settings
+# # enableCORS = true
+# # enableXsrfProtection = true
+
+# ============================================
+# OPTIONAL: Advanced Settings
+# ============================================
+
+# [client]
+# # Request timeout in seconds
+# toolbarMode = "minimal"
+
+# [logger]
+# # Filter out certain log messages
+# # messageFormat = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# [core]
+# # Script hash reuse
+# scriptHashReuseTimeout = 900
+
+# ============================================
+# NOTES
+# ============================================
+#
+# For development:
+# - Set runOnSave = true to see changes immediately
+# - Set logger.level = "debug" for verbose output
+#
+# For production:
+# - Set headless = true if running without display
+# - Disable analytics if desired
+# - Configure SSL certificates
+# - Set appropriate upload size limits
+#
+# Memory optimization:
+# - Use st.cache_resource for models (already in code)
+# - Keep image resolution reasonable
+# - Clear Streamlit cache: streamlit cache clear
+#
+# GPU optimization:
+# - Ensure CUDA is properly installed
+# - Check nvidia-smi for GPU availability
+# - Monitor memory with torch.cuda.memory_allocated()
+#
