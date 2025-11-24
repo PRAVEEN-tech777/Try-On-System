@@ -1,6 +1,6 @@
 # 💎 Enhanced Virtual Jewelry Try-On System
 
-A production-ready Streamlit application combining photorealistic compositing, 3D depth awareness, and occlusion handling for virtual jewelry try-on experiences.
+A production-ready Streamlit application combining photorealistic compositing, 3D depth awareness, strand-level hair matting, and advanced occlusion handling for virtual jewelry try-on experiences.
 
 ![Status](https://img.shields.io/badge/status-production%20ready-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
@@ -12,10 +12,13 @@ A production-ready Streamlit application combining photorealistic compositing, 3
 
 - **🎯 Intelligent Jewelry Placement**: Automatic positioning using facial/body landmarks
 - **🌊 3D-Aware Warping**: Necklaces follow natural neck contours using depth estimation
-- **🎭 Occlusion-Smart Blending**: Jewelry properly layers with hair and clothing
-- **🎨 Photorealistic Compositing**: Color matching, soft shadows, and smooth alpha blending
+- **💇 Strand-Level Hair Matting**: MODNet-powered precision occlusion for earrings
+- **🎭 Advanced Occlusion Handling**: Jewelry properly layers with hair and clothing
+- **🎨 Photorealistic Compositing**: Color matching, soft shadows, skin pressure, and environmental reflections
 - **🔄 Smart Fallback**: Handles close-ups (FaceMesh) and full-body shots (Pose estimation)
+- **📊 Side-by-Side Comparison**: View original and result images simultaneously
 - **⚡ GPU-Accelerated**: Optional CUDA support for 10× speedup
+- **📥 Auto-Download Models**: Automatic model fetching from multiple mirrors
 - **🎛️ Configurable Pipeline**: Tunable parameters for different jewelry types and scenarios
 
 ---
@@ -52,6 +55,29 @@ streamlit run app.py
 
 Open `http://localhost:8501` in your browser. 💫
 
+**Note**: On first run, the application will automatically download:
+- AI models from Hugging Face (~450MB)
+- MODNet matting model from mirror sources (~25MB)
+
+---
+
+## 🆕 What's New in v2.0
+
+### Hair Matting Engine
+- **Automatic MODNet download** from multiple mirror sources
+- **Strand-level hair detection** for natural earring occlusion
+- **Graceful fallback** to semantic segmentation if unavailable
+
+### Enhanced Realism
+- **Skin pressure simulation**: Jewelry creates subtle deformation on skin
+- **Environmental reflections**: Metallic surfaces reflect surroundings
+- **Advanced shadow casting**: Soft, depth-aware shadows
+
+### Improved UI/UX
+- **Side-by-side comparison**: Original vs. Result view
+- **Better visual feedback**: Clear status messages
+- **Download button**: Save results directly from the interface
+
 ---
 
 ## 📖 Documentation
@@ -60,29 +86,29 @@ Open `http://localhost:8501` in your browser. 💫
 - **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Installation, configuration, troubleshooting
   - System requirements
   - Step-by-step installation
-  - Running the application
+  - Model download handling
   - Deployment options
 
 ### For Understanding the System
 - **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)** - Architecture and design
   - Component overview
+  - Matting engine architecture
   - Detailed algorithm explanations
   - Performance characteristics
-  - Extension points
 
 ### For Using the API
 - **[API_REFERENCE.md](API_REFERENCE.md)** - Class and method documentation
   - Complete API reference
+  - MattingEngine usage
   - Usage examples
   - Common patterns
-  - Code snippets
 
 ### For Solving Problems
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Issues and optimization
+  - Model download failures
   - Installation problems
   - Runtime issues
   - Performance tuning
-  - Debugging commands
 
 ---
 
@@ -113,18 +139,6 @@ for model_path in image_paths:
     cv2.imwrite(f'output/{Path(model_path).stem}.png', result)
 ```
 
-### Custom Integration
-```python
-# Use components individually
-metrics = detector.detect_anatomy(img_rgb)
-depth_map = depth_engine.compute_depth_map(img_pil)
-masks = occlusion.get_segmentation_masks(img_pil)
-
-# Create custom pipeline
-warped = depth_engine.cylindrical_warp(jewelry, depth_map, ...)
-result = compositor.safe_overlay(background, warped, ...)
-```
-
 ---
 
 ## 🏗️ Architecture
@@ -132,31 +146,37 @@ result = compositor.safe_overlay(background, warped, ...)
 ```
 ┌─────────────────────────────────────┐
 │     Streamlit UI Layer              │
-│  Upload • Configure • Download      │
+│  Upload • Configure • Compare       │
+│  • Side-by-side View                │
+│  • Download Results                 │
 └────────────┬────────────────────────┘
              │
 ┌────────────▼────────────────────────┐
 │  EnhancedTryOnEngine (Pipeline)     │
 │  • Anatomy detection                │
 │  • Depth mapping                    │
+│  • Hair matting (MODNet)            │
 │  • Jewelry processing               │
 │  • Occlusion handling               │
 └────────────┬────────────────────────┘
              │
-     ┌───────┼───────┐
-     │       │       │
-┌────▼──┐ ┌─▼──┐ ┌──▼────┐
-│Depth  │ │Seg │ │Anatomy │
-│Engine │ │ m  │ │Detector│
-└───────┘ └────┘ └────────┘
-     │       │       │
-     └───────┼───────┘
+     ┌───────┼───────┬────────┐
+     │       │       │        │
+┌────▼──┐ ┌─▼──┐ ┌──▼────┐ ┌─▼─────┐
+│Depth  │ │Seg │ │Anatomy│ │Matting│
+│Engine │ │ m  │ │Detector│ │Engine │
+│       │ │    │ │        │ │(MODNet)│
+└───────┘ └────┘ └────────┘ └───────┘
+     │       │       │         │
+     └───────┼───────┴─────────┘
              │
         ┌────▼──────┐
         │Compositor │
         │ • Blend   │
         │ • Color   │
         │ • Shadow  │
+        │ • Reflect │
+        │ • Pressure│
         └───────────┘
              │
         ┌────▼──────┐
@@ -167,12 +187,13 @@ result = compositor.safe_overlay(background, warped, ...)
 ### Key Components
 
 1. **ModelManager** - Centralized model loading with caching
-2. **ImagePreprocessor** - Background removal, RGBA handling
-3. **DepthGeometryEngine** - 3D depth mapping and cylindrical warping
-4. **OcclusionAnalyzer** - Hair/clothing detection via semantic segmentation
-5. **AnatomicalDetector** - Facial/body landmark detection with fallback
-6. **AdvancedCompositor** - Photorealistic blending with effects
-7. **EnhancedTryOnEngine** - Main orchestration pipeline
+2. **MattingEngine** - MODNet-based hair matting with auto-download
+3. **ImagePreprocessor** - Background removal, RGBA handling
+4. **DepthGeometryEngine** - 3D depth mapping and cylindrical warping
+5. **OcclusionAnalyzer** - Hair/clothing detection via semantic segmentation
+6. **AnatomicalDetector** - Facial/body landmark detection with fallback
+7. **AdvancedCompositor** - Photorealistic blending with advanced effects
+8. **EnhancedTryOnEngine** - Main orchestration pipeline
 
 ---
 
@@ -187,8 +208,8 @@ Configuration
 │   └── Earring Size: 0.5-1.2
 ├── Blending
 │   ├── Color Matching: 0.0-1.0
-│   ├── Edge Softness: 1-10
-│   └── Shadow Strength: 0.0-0.5
+│   ├── Reflection: 0.0-1.0
+│   └── Shadows: 0.0-0.5
 └── Detection
     └── Confidence: 0.3-1.0
 ```
@@ -198,9 +219,11 @@ Configuration
 ```python
 config = TryOnConfig(
     necklace_width_ratio=3.5,
-    color_match_strength=0.3,
-    edge_feather_radius=5,
+    earring_height_ratio=0.75,
+    color_match_strength=0.35,
+    reflection_intensity=0.3,
     shadow_intensity=0.2,
+    edge_feather_radius=3,
     use_gpu=True
 )
 ```
@@ -212,9 +235,10 @@ config = TryOnConfig(
 | Scenario | GPU (RTX 3060) | CPU (i7-12700K) |
 |----------|---|---|
 | 1080×1080, Necklace | 4-5s | 45-60s |
-| 1080×1080, Multiple | 6-8s | 60-75s |
+| 1080×1080, Multiple | 7-9s | 65-80s |
+| 1080×1080, w/ Matting | 6-8s | 55-70s |
 | 640×640, Single | 2-3s | 20-25s |
-| Model Load | 3-5s | 15-20s |
+| Model Load (First Run) | 5-8s | 20-30s |
 
 **GPU significantly recommended for interactive use.**
 
@@ -224,16 +248,22 @@ config = TryOnConfig(
 
 ### Models Used
 
-| Component | Model | Size | Source |
-|-----------|-------|------|--------|
-| Depth | depth-anything-small | 100MB | Hugging Face |
-| Segmentation | segformer_b2_clothes | 350MB | Hugging Face |
-| Face | MediaPipe FaceMesh | 5MB | Google |
-| Pose | MediaPipe Pose | 5MB | Google |
+| Component | Model | Size | Source | Auto-Download |
+|-----------|-------|------|--------|---------------|
+| Depth | depth-anything-small | 100MB | Hugging Face | ✅ |
+| Segmentation | segformer_b2_clothes | 350MB | Hugging Face | ✅ |
+| Hair Matting | MODNet ONNX | 25MB | Multiple Mirrors | ✅ |
+| Face | MediaPipe FaceMesh | 5MB | Google | ✅ |
+| Pose | MediaPipe Pose | 5MB | Google | ✅ |
 
-### Auto-Download
+### Auto-Download Behavior
 
-All models download automatically on first run (~450MB total).
+**First Run**: All models download automatically (~485MB total)
+
+**MODNet Matting Model**:
+- Tries multiple public mirrors automatically
+- Falls back to semantic segmentation if download fails
+- Stores at: `modnet.onnx` (or custom path)
 
 ```bash
 # Manual download if needed:
@@ -256,10 +286,12 @@ Deep Learning:
 - torch>=2.0.1
 - transformers>=4.35.2
 - mediapipe>=0.10.9
+- onnxruntime>=1.16.0
+- onnxruntime-gpu (optional)
 
 Processing:
 - rembg>=0.0.55
-- dataclasses-json>=0.6.1
+- requests>=2.31.0
 ```
 
 See `requirements.txt` for full list with pinned versions.
@@ -268,26 +300,32 @@ See `requirements.txt` for full list with pinned versions.
 
 ## 🛠️ Troubleshooting
 
-### "No module named 'streamlit'"
+### Model Download Issues
+
+**"All download mirrors failed"**
 ```bash
-pip install -r requirements.txt
+# Check internet connection
+# Try manual download from:
+# https://huggingface.co/kirp/modnet/resolve/main/modnet_photographic_portrait_matting.onnx
+# Save as: modnet.onnx in project directory
 ```
+
+**"Could not find model at: ..."**
+```python
+# Update model path in app.py:
+local_model_path = "path/to/your/modnet.onnx"
+```
+
+### Hair Matting Disabled
+
+**"⚠️ Hair matting will be DISABLED"**
+- System will use semantic segmentation instead
+- Slightly less accurate for complex hairstyles
+- No impact on functionality
 
 ### CUDA out of memory
 ```python
 config.use_gpu = False  # Fall back to CPU
-```
-
-### Models not downloading
-```bash
-huggingface-cli download LiheYoung/depth-anything-small-hf
-huggingface-cli download mattmdjaga/segformer_b2_clothes
-```
-
-### Jewelry appears misaligned
-```python
-config.necklace_y_offset = 2.5  # Adjust positioning
-config.necklace_width_ratio = 3.0  # Adjust sizing
 ```
 
 See **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** for comprehensive solutions.
@@ -296,7 +334,7 @@ See **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** for comprehensive solutions.
 
 ## 📚 API Usage Examples
 
-### Basic Usage
+### Basic Usage with Matting
 ```python
 from app import EnhancedTryOnEngine, TryOnConfig, ModelManager
 import cv2
@@ -308,50 +346,67 @@ config = TryOnConfig()
 models = ModelManager.load_all_models(config)
 engine = EnhancedTryOnEngine(models, config)
 
+# Check matting status
+if engine.matting.enabled:
+    print("✅ Hair matting enabled")
+else:
+    print("⚠️ Using fallback segmentation")
+
 # Load images
 model_img = cv2.imread('model.jpg')
-jewelry = np.array(Image.open('necklace.png').convert('RGBA'))
+earrings = np.array(Image.open('earrings.png').convert('RGBA'))
 
 # Process
 result, status = engine.process(
     model_img,
-    {'Necklace': jewelry, 'Earrings': None, 'Nose Pin': None}
+    {'Earrings': earrings}
 )
 
 # Save
 cv2.imwrite('output.png', result)
-print(status)  # ✅ Success (FaceMesh): Necklace
+print(status)  # ✅ Success: Earrings
 ```
 
-### Batch Processing
+### Custom Matting Model Path
 ```python
-from pathlib import Path
-
-for img_path in Path('images/').glob('*.jpg'):
-    model_img = cv2.imread(str(img_path))
-    result, status = engine.process(model_img, jewelry_dict)
-    cv2.imwrite(f'output/{img_path.stem}_result.png', result)
-    print(f"{img_path.name}: {status}")
-```
-
-### Custom Configuration
-```python
-# For delicate jewelry
-config = TryOnConfig(
-    necklace_width_ratio=2.5,
-    color_match_strength=0.2,
-    shadow_intensity=0.1,
-    edge_feather_radius=5
+# In ModelManager.load_all_models():
+models['matting_engine'] = MattingEngine(
+    model_path="custom/path/modnet.onnx"
 )
 ```
 
-See **[API_REFERENCE.md](API_REFERENCE.md)** for complete documentation.
+### Disable Auto-Download (Use Local Only)
+```python
+class MattingEngine:
+    def __init__(self, model_path="modnet.onnx", auto_download=False):
+        self.model_path = model_path
+        
+        if not os.path.exists(self.model_path):
+            if auto_download:
+                self._download_model_robust()
+            else:
+                logging.warning("Model not found. Matting disabled.")
+                return
+```
 
 ---
 
 ## 🌐 Deployment
 
 ### Docker
+```dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+EXPOSE 8501
+CMD ["streamlit", "run", "app.py"]
+```
+
 ```bash
 docker build -t jewelry-try-on .
 docker run -p 8501:8501 jewelry-try-on
@@ -361,9 +416,10 @@ docker run -p 8501:8501 jewelry-try-on
 1. Push to GitHub
 2. Connect at https://streamlit.io/cloud
 3. Select repository and deploy
+4. Models download automatically on first launch
 
 ### AWS/GCP/Azure
-Deploy Docker image on compute instances with GPU support.
+Deploy Docker image on compute instances with GPU support for best performance.
 
 ---
 
@@ -375,6 +431,7 @@ Contributions welcome! Areas for enhancement:
 - Multi-person support
 - Advanced texture mapping
 - Performance optimizations
+- More matting model options
 
 ---
 
@@ -411,6 +468,10 @@ MIT License - see LICENSE file
 - SegFormer B2 - [Paper](https://arxiv.org/abs/2105.15203)
 - Model: `mattmdjaga/segformer_b2_clothes`
 
+### Hair Matting
+- MODNet - [Paper](https://arxiv.org/abs/2011.11961)
+- "Is a Green Screen Really Necessary for Real-Time Portrait Matting?"
+
 ### Face Landmarks
 - MediaPipe FaceMesh - [Documentation](https://mediapipe.dev)
 
@@ -421,18 +482,20 @@ MIT License - see LICENSE file
 
 ## 📈 Roadmap
 
+- [x] Strand-level hair matting
+- [x] Side-by-side comparison UI
+- [x] Auto-download models
 - [ ] Real-time camera mode
 - [ ] Multi-person support
 - [ ] Ring virtual try-on
 - [ ] Bracelet support
 - [ ] Advanced lighting estimation
-- [ ] Texture and material simulation
 - [ ] Mobile app
 - [ ] REST API endpoint
 
 ---
 
-**Version**: 1.0  
+**Version**: 2.0  
 **Status**: ✅ Production Ready  
 **Last Updated**: November 2024
 
@@ -451,6 +514,9 @@ MIT License - see LICENSE file
 
 **Something broken?**
 → See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+**Models not downloading?**
+→ Check internet connection and firewall settings
 
 ---
 
