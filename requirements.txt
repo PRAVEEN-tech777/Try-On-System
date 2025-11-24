@@ -14,7 +14,7 @@ transformers==4.35.2
 timm==0.9.12
 
 ## Background Removal
-rembg==0.0.55
+rembg>=2.0.28,<3.0
 
 ## Utilities
 dataclasses-json==0.6.1
